@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Головна
+{% endblock %}
+
+{% block body %}
+<h1>Головна</h1>
+{% for el in clients %}
+<div class="client">
+    <h2>{{ el.name }}</h2>
+    <p>{{ el.email }}</p>
+    <a href="/client-details/{{ el.id }}">Деталі</a>
+</div>
+{% endfor %}
+{% endblock %}
