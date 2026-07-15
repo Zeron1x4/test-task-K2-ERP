@@ -1,16 +1,203 @@
 {% extends 'base.html' %}
 
 {% block title %}
-Головна
+Облік замовлень
 {% endblock %}
 
 {% block body %}
-<h1>Головна</h1>
-{% for el in clients %}
-<div class="client">
-    <h2>{{ el.name }}</h2>
-    <p>{{ el.email }}</p>
-    <a href="/client-details/{{ el.id }}">Деталі</a>
-</div>
-{% endfor %}
+<h1>Система обліку</h1>
+
+<nav class="tabs">
+    <button type="button" data-tab="clients-section">
+        Клієнти
+    </button>
+
+    <button type="button" data-tab="products-section">
+        Товари
+    </button>
+
+    <button type="button" data-tab="orders-section">
+        Замовлення
+    </button>
+</nav>
+
+<section id="clients-section" class="ria-section">
+    <h2>Клієнти</h2>
+
+    <form id="client-form">
+        <input
+            type="text"
+            id="client-name"
+            placeholder="Ім’я клієнта"
+            required
+        >
+
+        <input
+            type="email"
+            id="client-email"
+            placeholder="Email"
+            required
+        >
+
+        <button type="submit">
+            Додати клієнта
+        </button>
+    </form>
+
+    <p id="client-message"></p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Ім’я</th>
+                <th>Email</th>
+            </tr>
+        </thead>
+
+        <tbody id="clients-table-body">
+            {% for client in clients %}
+                <tr data-client-id="{{ client.id }}">
+                    <td>{{ client.id }}</td>
+                    <td>{{ client.name }}</td>
+                    <td>{{ client.email }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section id="products-section" class="ria-section" hidden>
+    <h2>Товари</h2>
+
+    <form id="product-form">
+        <input
+            type="text"
+            id="product-name"
+            placeholder="Назва товару"
+            required
+        >
+
+        <input
+            type="number"
+            id="product-price"
+            placeholder="Ціна"
+            min="1"
+            required
+        >
+
+        <input
+            type="number"
+            id="product-quantity"
+            placeholder="Кількість"
+            min="0"
+            required
+        >
+
+        <button type="submit">
+            Додати товар
+        </button>
+    </form>
+
+    <p id="product-message"></p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Назва</th>
+                <th>Ціна</th>
+                <th>Кількість</th>
+            </tr>
+        </thead>
+
+        <tbody id="products-table-body">
+            {% for product in products %}
+                <tr data-product-id="{{ product.id }}">
+                    <td>{{ product.id }}</td>
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.price }} грн</td>
+                    <td class="product-stock">
+                        {{ product.quantity }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section id="orders-section" class="ria-section" hidden>
+    <h2>Замовлення</h2>
+
+    <form id="order-form">
+        <select id="order-client" required>
+            <option value="">Оберіть клієнта</option>
+
+            {% for client in clients %}
+                <option value="{{ client.id }}">
+                    {{ client.name }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <select id="order-product" required>
+            <option value="">Оберіть товар</option>
+
+            {% for product in products %}
+                <option
+                    value="{{ product.id }}"
+                    data-stock="{{ product.quantity }}"
+                >
+                    {{ product.name }} —
+                    {{ product.price }} грн,
+                    залишок: {{ product.quantity }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <input
+            type="number"
+            id="order-quantity"
+            min="1"
+            placeholder="Кількість"
+            required
+        >
+
+        <button type="submit">
+            Створити замовлення
+        </button>
+    </form>
+
+    <p id="order-message"></p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Клієнт</th>
+                <th>Товар</th>
+                <th>Кількість</th>
+                <th>Сума</th>
+            </tr>
+        </thead>
+
+        <tbody id="orders-table-body">
+            {% for order in orders %}
+                {% for item in order.items %}
+                    <tr>
+                        <td>{{ order.id }}</td>
+                        <td>{{ order.client.name }}</td>
+                        <td>{{ item.product.name }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.line_total }} грн</td>
+                    </tr>
+                {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}
+
+{% block script %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}

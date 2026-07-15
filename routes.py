@@ -1,13 +1,15 @@
 from flask import render_template, request, redirect, jsonify
-from models import Client, Product
+from models import Client, Product, Order
 from extensions import db
 from services import create_order_service
 
 def register_routes(app):
     @app.route('/')
     def index():
-        clients = Client.query.all()
-        return render_template('index.html', clients=clients)
+        clients = Client.query.order_by(Client.id.desc()).all()
+        products = Product.query.order_by(Product.id.desc()).all()
+        orders = Order.query.order_by(Order.id.desc()).all()
+        return render_template('index.html', clients=clients, products=products, orders=orders)
 
 
     @app.route('/create-client')
@@ -68,8 +70,29 @@ def register_routes(app):
         product_data = request.get_json(silent=True) or {}
 
         name = str(product_data.get('name') or '').strip()
-        price = str(product_data.get('price') or '').strip()
-        quantity = str(product_data.get('quantity') or '').strip()
+        price = product_data.get('price')
+        quantity = product_data.get('quantity')
+
+        try:
+            price = int(price)
+            quantity = int(quantity)
+        except (TypeError, ValueError):
+            return jsonify({
+                'success': False,
+                'message': 'Ціна та кількість мають бути числами'
+            }), 400
+
+        if price <= 0:
+            return jsonify({
+                'success': False,
+                'message': 'Ціна має бути більшою за нуль'
+            }), 400
+
+        if quantity < 0:
+            return jsonify({
+                'success': False,
+                'message': 'Кількість не може бути від’ємною'
+            }), 400
 
         if not name:
             return jsonify({
@@ -123,7 +146,7 @@ def register_routes(app):
 
     @app.route('/api/order', methods=['POST'])
     def create_order_api():
-        order_data = request.get_json(silent=True) or ''
+        order_data = request.get_json(silent=True) or {}
 
         try:
             order, error = create_order_service(
@@ -136,23 +159,32 @@ def register_routes(app):
                 return jsonify({
                     'success': False,
                     'message': error
-                })
+                }), 400
+            order_item = order.items[0]
+
             return jsonify({
                 'success': True,
-                'message': 'Змовлення успішно створено',
+                'message': 'Замовлення успішно створено',
                 'order': {
                     'id': order.id,
                     'client_id': order.client_id,
-                    'total_price': order.total_price
+                    'client_name': order.client.name,
+                    'product_id': order_item.product_id,
+                    'product_name': order_item.product.name,
+                    'quantity': order_item.quantity,
+                    'price': order_item.price,
+                    'total_price': order.total_price,
+                    'product_stock': order_item.product.quantity
                 }
             }), 201
-        except Exception:
+        except Exception as error:
             db.session.rollback()
+            print("Помилка створення замовлення:", error)
 
-        return jsonify({
-            'success': False,
-            'message': 'Не вдалося створити замовлення'
-        }), 500
+            return jsonify({
+                'success': False,
+                'message': 'Не вдалося створити замовлення'
+            }), 500
 
 
     @app.route('/client-details/<int:id>')
